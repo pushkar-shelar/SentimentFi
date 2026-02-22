@@ -17,12 +17,17 @@ from web3 import Web3
 # Explicitly load .env from the project root (one level above ai_engine/)
 load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
-MONAD_RPC_URL = os.getenv("MONAD_RPC_URL", "https://testnet-rpc.monad.xyz")
-PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
-CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "")
-
 # Minimum gas price for Monad Testnet (100 gwei)
 MIN_GAS_PRICE = Web3.to_wei("100", "gwei")
+
+
+def _cfg():
+    """Read config from env at call time (supports Streamlit Cloud secrets bridge)."""
+    return {
+        "rpc_url": os.getenv("MONAD_RPC_URL", "https://testnet-rpc.monad.xyz"),
+        "private_key": os.getenv("PRIVATE_KEY", ""),
+        "contract_address": os.getenv("CONTRACT_ADDRESS", ""),
+    }
 
 
 def _load_abi() -> list:
@@ -52,32 +57,33 @@ def _load_abi() -> list:
 
 def _get_web3() -> Web3:
     """Return a Web3 instance connected to Monad Testnet."""
-    w3 = Web3(Web3.HTTPProvider(MONAD_RPC_URL, request_kwargs={"timeout": 10}))
+    rpc_url = _cfg()["rpc_url"]
+    w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 10}))
     try:
-        # web3.py v7: use eth.block_number instead of deprecated is_connected()
         _ = w3.eth.block_number
     except Exception as e:
-        raise ConnectionError(f"Cannot connect to Monad RPC at {MONAD_RPC_URL}: {e}")
+        raise ConnectionError(f"Cannot connect to Monad RPC at {rpc_url}: {e}")
     return w3
 
 
 def _get_contract(w3: Web3):
     """Load the SentimentOracle contract instance."""
     abi = _load_abi()
-    address = Web3.to_checksum_address(CONTRACT_ADDRESS)
+    address = Web3.to_checksum_address(_cfg()["contract_address"])
     return w3.eth.contract(address=address, abi=abi)
 
 
 def push_onchain(token: str, score: float) -> str:
     """Push a sentiment score onchain. Returns the transaction hash."""
-    if not PRIVATE_KEY:
+    cfg = _cfg()
+    if not cfg["private_key"]:
         raise ValueError("PRIVATE_KEY not set in .env")
-    if not CONTRACT_ADDRESS:
+    if not cfg["contract_address"]:
         raise ValueError("CONTRACT_ADDRESS not set in .env")
 
     w3 = _get_web3()
     contract = _get_contract(w3)
-    account = w3.eth.account.from_key(PRIVATE_KEY)
+    account = w3.eth.account.from_key(cfg["private_key"])
 
     score_int = int(score * 100)  # e.g. 0.75 → 75
     nonce = w3.eth.get_transaction_count(account.address)
@@ -91,7 +97,7 @@ def push_onchain(token: str, score: float) -> str:
 
     gas_estimate = w3.eth.estimate_gas(tx)
     tx["gas"] = gas_estimate
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
+    signed_tx = w3.eth.account.sign_transaction(tx, private_key=cfg["private_key"])
     tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
 
@@ -103,7 +109,7 @@ def push_onchain(token: str, score: float) -> str:
 
 def read_sentiment(token: str) -> float:
     """Read the stored sentiment score for a token from the contract."""
-    if not CONTRACT_ADDRESS:
+    if not _cfg()["contract_address"]:
         raise ValueError("CONTRACT_ADDRESS not set in .env")
 
     w3 = _get_web3()
@@ -120,19 +126,20 @@ def get_explorer_url(tx_hash: str) -> str:
 
 def check_connection() -> dict:
     """Return Web3 connection status, chain ID, and latest block."""
+    rpc_url = _cfg()["rpc_url"]
     try:
-        w3 = Web3(Web3.HTTPProvider(MONAD_RPC_URL, request_kwargs={"timeout": 8}))
+        w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 8}))
         block = w3.eth.block_number
         chain = w3.eth.chain_id
         return {
             "connected": True,
             "chain_id": chain,
             "latest_block": block,
-            "rpc_url": MONAD_RPC_URL,
+            "rpc_url": rpc_url,
         }
     except Exception as e:
         return {
             "connected": False,
             "error": str(e),
-            "rpc_url": MONAD_RPC_URL,
+            "rpc_url": rpc_url,
         }

@@ -16,6 +16,14 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+# Bridge Streamlit Cloud secrets → os.environ so ai_engine can read them via os.getenv()
+for _key in ("MONAD_RPC_URL", "PRIVATE_KEY", "CONTRACT_ADDRESS"):
+    if _key not in os.environ:
+        try:
+            os.environ[_key] = st.secrets[_key]
+        except (KeyError, FileNotFoundError):
+            pass
+
 from ai_engine.sentiment_engine import analyze_sentiment_detailed, MODEL_NAME
 from ai_engine.data_fetcher import fetch_all, fetch_by_query
 from ai_engine.blockchain import (
