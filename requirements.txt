@@ -1,6 +1,8 @@
 streamlit
 web3
 transformers
-torch
+torch --index-url https://download.pytorch.org/whl/cpu
 pandas
 python-dotenv
+feedparser
+praw
