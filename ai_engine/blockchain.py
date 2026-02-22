@@ -14,7 +14,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from web3 import Web3
 
-load_dotenv()
+# Explicitly load .env from the project root (one level above ai_engine/)
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
 
 MONAD_RPC_URL = os.getenv("MONAD_RPC_URL", "https://testnet-rpc.monad.xyz")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
