@@ -7,7 +7,6 @@ Loads ABI from Hardhat compilation artifacts automatically.
 ⚠️ MONAD REQUIREMENT: All transactions use gasPrice >= 100 gwei.
 """
 
-import json
 import os
 from pathlib import Path
 
@@ -30,29 +29,42 @@ def _cfg():
     }
 
 
-def _load_abi() -> list:
-    """Load the SentimentOracle ABI from Hardhat artifacts."""
-    base_dir = Path(__file__).resolve().parent.parent
-    artifact_path = (
-        base_dir
-        / "packages"
-        / "hardhat"
-        / "artifacts"
-        / "contracts"
-        / "SentimentOracle.sol"
-        / "SentimentOracle.json"
-    )
-
-    if not artifact_path.exists():
-        raise FileNotFoundError(
-            f"Contract artifact not found at {artifact_path}. "
-            "Please compile the contract first: cd packages/hardhat && npx hardhat compile"
-        )
-
-    with open(artifact_path, "r") as f:
-        artifact = json.load(f)
-
-    return artifact["abi"]
+# Hardcoded ABI — no Hardhat artifact file needed on Streamlit Cloud
+SENTIMENT_ORACLE_ABI = [
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": False, "internalType": "string", "name": "token", "type": "string"},
+            {"indexed": False, "internalType": "int256", "name": "score", "type": "int256"},
+        ],
+        "name": "SentimentUpdated",
+        "type": "event",
+    },
+    {
+        "inputs": [{"internalType": "string", "name": "token", "type": "string"}],
+        "name": "getSentiment",
+        "outputs": [{"internalType": "int256", "name": "", "type": "int256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "string", "name": "", "type": "string"}],
+        "name": "sentimentScores",
+        "outputs": [{"internalType": "int256", "name": "", "type": "int256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "string", "name": "token", "type": "string"},
+            {"internalType": "int256", "name": "score", "type": "int256"},
+        ],
+        "name": "updateSentiment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+]
 
 
 def _get_web3() -> Web3:
@@ -68,9 +80,8 @@ def _get_web3() -> Web3:
 
 def _get_contract(w3: Web3):
     """Load the SentimentOracle contract instance."""
-    abi = _load_abi()
     address = Web3.to_checksum_address(_cfg()["contract_address"])
-    return w3.eth.contract(address=address, abi=abi)
+    return w3.eth.contract(address=address, abi=SENTIMENT_ORACLE_ABI)
 
 
 def push_onchain(token: str, score: float) -> str:
