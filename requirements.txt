@@ -1,0 +1,6 @@
+streamlit
+web3
+transformers
+torch
+pandas
+python-dotenv
