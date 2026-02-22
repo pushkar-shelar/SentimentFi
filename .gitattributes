@@ -1,3 +1,2 @@
-# Tell GitHub Linguist to ignore Scaffold-ETH boilerplate
+# Ignore Next.js boilerplate in language stats
 packages/nextjs/** linguist-vendored
-packages/hardhat/** linguist-vendored
