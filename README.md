@@ -12,7 +12,7 @@ SentimentFi pulls live crypto sentiment from Reddit and news feeds, runs it thro
 <img width="1893" height="887" alt="image" src="https://github.com/user-attachments/assets/17941f0f-46c9-46bf-b958-fe63d284bf13" />
 
 
-**Live App:** [your-app.streamlit.app](sentimentfi-i9yw2h6mdisnyvyxm95skw.streamlit.app)  
+**Live App:** [SentimentFi.streamlit.app](sentimentfi-i9yw2h6mdisnyvyxm95skw.streamlit.app)  
 **Contract:** [`0xC678C0b6dCB0999de64786F620817b767f70b685`](https://testnet.monadexplorer.com/address/0xC678C0b6dCB0999de64786F620817b767f70b685) on Monad Testnet
 
 ---
